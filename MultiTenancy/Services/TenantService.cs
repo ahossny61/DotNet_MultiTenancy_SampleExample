@@ -42,7 +42,7 @@ namespace MultiTenancy.Services
 
         public Tenant? GetCurrentTenant()
         {
-            throw new NotImplementedException();
+            return _currentTenant;
         }
 
         public string? GetDatabasProvider()

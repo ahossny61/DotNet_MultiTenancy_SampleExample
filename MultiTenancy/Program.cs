@@ -3,6 +3,7 @@
 using Microsoft.Extensions.DependencyInjection;
 
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -12,6 +13,30 @@ builder.Services.Configure<TenantSettings>(builder.Configuration.GetSection(name
 
 TenantSettings options = new();
 builder.Configuration.GetSection(nameof(TenantSettings)).Bind(options);
+
+var defaultDBProvider = options.Defaults.DBProvider;
+
+if(defaultDBProvider.ToLower() == "mssqle")
+{
+    builder.Services.AddDbContext<AppicationDBContext>(m => m.UseSqlServer());
+}
+
+foreach(var tenant in options.Tenants)
+{
+
+    var connectString = tenant.ConnectionString?? options.Defaults.ConnectionString;
+
+    using var scope = builder.Services.BuildServiceProvider().CreateScope();
+
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppicationDBContext>();
+
+    dbContext.Database.SetConnectionString(connectString);
+    if (dbContext.Database.GetPendingMigrations().Any())
+    {
+        dbContext.Database.Migrate();
+    }
+}
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

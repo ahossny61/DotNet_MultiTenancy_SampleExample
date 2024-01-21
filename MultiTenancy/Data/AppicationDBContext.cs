@@ -12,7 +12,7 @@ namespace MultiTenancy.Data
         public AppicationDBContext(DbContextOptions options, ITenantService tenantService) : base(options)
         {
             _tenantService = tenantService;
-            TenantId = _tenantService.GetCurrentTenant().TId;
+            TenantId = _tenantService.GetCurrentTenant()?.TId;
         }
 
         public DbSet<Product>products { get; set; }
@@ -25,7 +25,17 @@ namespace MultiTenancy.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            
+            var _tenantConnection = _tenantService.GetConnectionString();
+
+            if (!string.IsNullOrEmpty(_tenantConnection))
+            {
+                var dbProvider = _tenantService.GetDatabasProvider();
+                if(dbProvider?.ToLower() == "mssqle")
+                {
+                    optionsBuilder.UseSqlServer(_tenantConnection);
+                }
+
+            }
         }
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
